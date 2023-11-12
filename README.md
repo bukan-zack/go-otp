@@ -8,5 +8,5 @@
 go get -u github.com/pixec/go-otp
 ```
 
-# License
+## License
 `go-otp` is licensed under the [MIT License](./LICENSE).
