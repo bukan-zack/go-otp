@@ -30,13 +30,16 @@ var (
 )
 
 func TestHOTPGenerate(t *testing.T) {
+	hotp, _ := otp.NewHOTP(otp.HOTPOptions{
+		Secret: hotpSecret,
+		Digits: otp.DigitsSix,
+		Hash:   otp.HashSHA1,
+	})
+
 	for _, tv := range hotpTestVectors {
-		code, err := otp.NewCustomHOTP(otp.HOTPOptions{
-			Secret:  hotpSecret,
-			Counter: tv.Count,
-			Hash:    otp.HashSHA1,
-			Digits:  otp.DigitsSix,
-		}).Generate()
+		hotp.SetCounter(tv.Count)
+
+		code, err := hotp.Generate()
 		if err != nil {
 			t.Error(err)
 		}
@@ -48,13 +51,16 @@ func TestHOTPGenerate(t *testing.T) {
 }
 
 func TestHOTPValidate(t *testing.T) {
+	hotp, _ := otp.NewHOTP(otp.HOTPOptions{
+		Secret: hotpSecret,
+		Digits: otp.DigitsSix,
+		Hash:   otp.HashSHA1,
+	})
+
 	for _, tv := range hotpTestVectors {
-		if err := otp.NewCustomHOTP(otp.HOTPOptions{
-			Secret:  hotpSecret,
-			Counter: tv.Count,
-			Hash:    otp.HashSHA1,
-			Digits:  otp.DigitsSix,
-		}).Validate(tv.Code); err != nil {
+		hotp.SetCounter(tv.Count)
+
+		if err := hotp.Validate(tv.Code); err != nil {
 			t.Error(err)
 		}
 	}

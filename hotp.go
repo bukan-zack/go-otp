@@ -1,10 +1,10 @@
 package otp
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/subtle"
+	"encoding/base32"
 	"encoding/binary"
 	"math"
 	"strconv"
@@ -13,43 +13,40 @@ import (
 type HOTP struct {
 	secret  []byte
 	counter [8]byte
-	hash    Hash
 	digits  Digits
+	hash    Hash
 }
 
 type HOTPOptions struct {
-	Secret  []byte
-	Counter uint64
-	Hash    Hash
-	Digits  Digits
+	Secret  []byte // Secret between client and server. K in RFC 4226.
+	Counter uint64 // The moving factor. C in RFC 4226.
+	Digits  Digits // Number of digits in an HOTP code. Digit in RFC 4226.
+	Hash    Hash   // Algorithm for the HOTP.
 }
 
-// NewHOTP returns a new HOTP. If you need more control over HOTP value, use NewCustomHOTP.
-func NewHOTP(counter uint64) (*HOTP, error) {
-	secret := make([]byte, HashSHA1.Size())
-	if _, err := rand.Read(secret); err != nil {
-		return nil, err
+// NewHOTP returns a new HOTP.
+func NewHOTP(opts HOTPOptions) (*HOTP, error) {
+	h := &HOTP{
+		secret: opts.Secret,
+		digits: opts.Digits,
+		hash:   opts.Hash,
 	}
 
-	return NewCustomHOTP(HOTPOptions{
-		Secret:  secret,
-		Counter: counter,
-		Hash:    HashSHA1,
-		Digits:  DigitsSix,
-	}), nil
-}
-
-// NewCustomHOTP returns a new HOTP.
-func NewCustomHOTP(opts HOTPOptions) *HOTP {
-	h := &HOTP{
-		secret: bytes.ToUpper(opts.Secret),
-		hash:   opts.Hash,
-		digits: opts.Digits,
+	if h.secret == nil {
+		secret := make([]byte, h.hash.Size())
+		if _, err := rand.Read(secret); err != nil {
+			return nil, err
+		}
 	}
 
 	binary.BigEndian.PutUint64(h.counter[:], opts.Counter)
 
-	return h
+	return h, nil
+}
+
+// SetSecret sets the secret for the HOTP.
+func (h *HOTP) SetSecret(secret []byte) {
+	h.secret = secret
 }
 
 // Secret returns the HOTP secret.
@@ -57,12 +54,42 @@ func (h *HOTP) Secret() []byte {
 	return h.secret
 }
 
+// Base32Secret returns the HOTP secret encoded in base32.
+func (h *HOTP) Base32Secret() string {
+	return base32.StdEncoding.EncodeToString(h.secret)
+}
+
+// SetCounter sets the HOTP counter to given counter.
+func (h *HOTP) SetCounter(counter uint64) {
+	binary.BigEndian.PutUint64(h.counter[:], counter)
+}
+
 // Counter returns the HOTP counter.
 func (h *HOTP) Counter() uint64 {
 	return binary.BigEndian.Uint64(h.counter[:])
 }
 
-// Generate returns cryptographically generated HOTP value.
+// SetDigits sets the HOTP digits.
+func (h *HOTP) SetDigits(digits Digits) {
+	h.digits = digits
+}
+
+// Digits returns the HOTP digits.
+func (h *HOTP) Digits() Digits {
+	return h.digits
+}
+
+// SetHash sets the hash algorithm for the HOTP.
+func (h *HOTP) SetHash(hash Hash) {
+	h.hash = hash
+}
+
+// Hash returns the HOTP hash algorithm.
+func (h *HOTP) Hash() Hash {
+	return h.hash
+}
+
+// Generate returns cryptographically generated HOTP code.
 func (h *HOTP) Generate() (string, error) {
 	mac := hmac.New(h.hash.Hash, h.secret)
 	mac.Write(h.counter[:])

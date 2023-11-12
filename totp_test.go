@@ -36,13 +36,17 @@ var (
 )
 
 func TestTOTPGenerate(t *testing.T) {
+	totp, _ := otp.NewTOTP(otp.TOTPOptions{
+		TimeStart: time.Unix(0, 0),
+		Digits:    otp.DigitsEight,
+	})
+
 	for _, tv := range totpTestVectors {
-		code, err := otp.NewCustomTOTP(otp.TOTPOptions{
-			Secret: tv.Secret,
-			Time:   time.Unix(tv.TimeSec, 0).UTC(),
-			Hash:   tv.Hash,
-			Digits: otp.DigitsEight,
-		}).Generate()
+		totp.SetSecret(tv.Secret)
+		totp.SetTime(time.Unix(tv.TimeSec, 0).UTC())
+		totp.SetHash(tv.Hash)
+
+		code, err := totp.Generate()
 		if err != nil {
 			t.Error(err)
 		}
@@ -54,13 +58,17 @@ func TestTOTPGenerate(t *testing.T) {
 }
 
 func TestTOTPValidate(t *testing.T) {
+	totp, _ := otp.NewTOTP(otp.TOTPOptions{
+		TimeStart: time.Unix(0, 0),
+		Digits:    otp.DigitsEight,
+	})
+
 	for _, tv := range totpTestVectors {
-		if err := otp.NewCustomTOTP(otp.TOTPOptions{
-			Secret: tv.Secret,
-			Time:   time.Unix(tv.TimeSec, 0).UTC(),
-			Hash:   tv.Hash,
-			Digits: otp.DigitsEight,
-		}).Validate(tv.Code); err != nil {
+		totp.SetSecret(tv.Secret)
+		totp.SetTime(time.Unix(tv.TimeSec, 0).UTC())
+		totp.SetHash(tv.Hash)
+
+		if err := totp.Validate(tv.Code); err != nil {
 			t.Error(err)
 		}
 	}
