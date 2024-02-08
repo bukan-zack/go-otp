@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -40,8 +41,8 @@ func NewTOTP(opts TOTPOptions) (*TOTP, error) {
 	}
 
 	if t.secret == nil {
-		secret := make([]byte, t.hash.Size())
-		if _, err := rand.Read(secret); err != nil {
+		t.secret = make([]byte, t.hash.Size())
+		if _, err := rand.Read(t.secret); err != nil {
 			return nil, err
 		}
 	}
@@ -67,7 +68,7 @@ func (t *TOTP) Secret() []byte {
 
 // Base32Secret returns the TOTP secret encoded in base32.
 func (t *TOTP) Base32Secret() string {
-	return base32.StdEncoding.EncodeToString(t.secret)
+	return strings.ReplaceAll(base32.StdEncoding.EncodeToString(t.secret), "=", "")
 }
 
 // SetTime sets the TOTP time.
