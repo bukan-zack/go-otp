@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -68,7 +67,7 @@ func (t *TOTP) Secret() []byte {
 
 // Base32Secret returns the TOTP secret encoded in base32.
 func (t *TOTP) Base32Secret() string {
-	return strings.ReplaceAll(base32.StdEncoding.EncodeToString(t.secret), "=", "")
+	return base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(t.secret)
 }
 
 // SetTime sets the TOTP time.
